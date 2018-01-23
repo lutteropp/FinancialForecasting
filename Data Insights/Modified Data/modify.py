@@ -5,8 +5,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from joblib import Parallel, delayed
-
 import math
 
 def update_future(actDay, act_window_idx, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist):
@@ -31,28 +29,6 @@ def update_past(actDay, act_window_idx, max_window_idx, minDay, filledDays, yVal
 			break
 		lastDay = lastDay - 1
 
-def process_index(index, row, window, maxDay, filledDays, yVals, futureYVals, futureYDist, minDay, yVals, pastYVals, pastYDist, weightedAvg):
-	print(index)
-	actDay = int(row['Day'])
-
-	for i in range(window):
-		futureYDist[i][index] = 999
-		pastYDist[i][index] = 999
-
-	update_future(actDay, 0, window - 1, maxDay, filledDays, yVals, futureYVals, futureYDist)
-	update_past(actDay, 0, window - 1, minDay, filledDays, yVals, pastYVals, pastYDist)
-
-	sumValPast = 0
-	sumValNext = 0
-	sumWeightPast = 0
-	sumWeightNext = 0
-	for i in range(window):
-		sumValPast = sumValPast + (1/float(pastYDist[i][index])) * pastYVals[i][index]
-		sumValNext = sumValNext + (1/float(futureYDist[i][index])) * futureYVals[i][index]
-		sumWeightPast = sumWeightPast + (1/ float(pastYDist[i][index]))
-		sumWeightNext = sumWeightNext + (1 / float(futureYDist[i][index]))
-		weightedAvg[i][index] = (sumValPast + sumValNext) / (sumWeightPast + sumWeightNext)
-
 def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig_features):
 	num_entries = 0
 	for index, row in dataframe.iterrows():
@@ -70,10 +46,27 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 		futureYDist.append(np.zeros(num_entries))
 		weightedAvg.append(np.zeros(num_entries))
 
-	Parallel(n_jobs=4)(delayed(process_index)(index, row, window, maxDay, filledDays, yVals, futureYVals, futureYDist, minDay, yVals, pastYVals, pastYDist, weightedAvg) for index, row in dataframe.iterrows())
+	for index, row in dataframe.iterrows():
+		print(index)
+		actDay = int(row['Day'])
 
-	#for index, row in dataframe.iterrows():
-	#	process_index(index, row, window, maxDay, filledDays, yVals, futureYVals, futureYDist, minDay, yVals, pastYVals, pastYDist, weightedAvg)
+		for i in range(window):
+			futureYDist[i][index] = 999
+			pastYDist[i][index] = 999
+
+		update_future(actDay, 0, window - 1, maxDay, filledDays, yVals, futureYVals, futureYDist)
+		update_past(actDay, 0, window - 1, minDay, filledDays, yVals, pastYVals, pastYDist)
+
+		sumValPast = 0
+		sumValNext = 0
+		sumWeightPast = 0
+		sumWeightNext = 0
+		for i in range(window):
+			sumValPast = sumValPast + (1/float(pastYDist[i][index])) * pastYVals[i][index]
+			sumValNext = sumValNext + (1/float(futureYDist[i][index])) * futureYVals[i][index]
+			sumWeightPast = sumWeightPast + (1/ float(pastYDist[i][index]))
+			sumWeightNext = sumWeightNext + (1 / float(futureYDist[i][index]))
+			weightedAvg[i][index] = (sumValPast + sumValNext) / (sumWeightPast + sumWeightNext)
 
 	features = copy(orig_features)
 	for i in range(window):
