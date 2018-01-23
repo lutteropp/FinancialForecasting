@@ -1,0 +1,31 @@
+#! /usr/env/python
+
+import pandas as pd
+import numpy as np
+from sklearn.metrics import mean_squared_log_error
+from sklearn.ensemble import RandomForestRegressor
+from lightgbm import LGBMRegressor
+from sklearn import decomposition
+
+features = ['Market', 'Day', 'Stock', 'x0', 'x1', 'x2', 'x3A', 'x3B', 'x3C', 'x3D', 'x3E', 'x4', 'x5', 'x6']
+
+df = pd.read_csv('train.csv', index_col=0)
+df = df.fillna(0) # replace NaN entries
+df_test = pd.read_csv('test.csv', index_col=0)
+df_test = df_test.fillna(0) # replace NaN entries
+
+X = df[features]
+Y = df['y']
+
+model = RandomForestRegressor(n_estimators=1000, n_jobs=-1, random_state=0)
+#model = LGBMRegressor(n_estimators=1000, learning_rate=0.01)
+
+pca = decomposition.PCA(n_components=len(features))
+pca.fit(X)
+
+model.fit(pca.transform(X),Y)
+yp = pd.Series(model.predict(pca.transform(df_test[features]))).rename('y')
+yp.index.name = 'Index'
+print(yp.head())
+
+yp.to_csv('RandomForestPCA.csv', header=True)
