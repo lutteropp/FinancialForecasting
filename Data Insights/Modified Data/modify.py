@@ -7,26 +7,26 @@ import seaborn as sns
 
 import math
 
-def update_future(actDay, act_window_idx, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist):
+def update_future(actDay, act_window_idx, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row):
 	nextDay = actDay + 1
 	while nextDay <= maxDay:
 		if nextDay in filledDays[row['Stock']]:
 			futureYVals[act_window_idx][index] = yVals[(row['Stock'], nextDay)]
 			futureYDist[act_window_idx][index] = nextDay - actDay
 			if (act_window_idx < max_window_idx):
-				return update_future(nextDay + 1, act_window_idx + 1, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist)
+				return update_future(nextDay + 1, act_window_idx + 1, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row)
 			break
 		nextDay = nextDay + 1
 	return (futureYVals, futureYDist)
 
-def update_past(actDay, act_window_idx, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist):
+def update_past(actDay, act_window_idx, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist, index, row):
 	lastDay = actDay - 1
 	while lastDay >= minDay:
 		if lastDay in filledDays[row['Stock']]:
 			pastYVals[act_window_idx][index] = yVals[(row['Stock'], lastDay)]
 			pastYDist[act_window_idx][index] = actDay - lastDay
 			if (act_window_idx < max_window_idx):
-				return update_past(lastDay - 1, act_window_idx + 1, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist)
+				return update_past(lastDay - 1, act_window_idx + 1, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist, index, row)
 			break
 		lastDay = lastDay - 1
 	return (pastYVals, pastYDist)
@@ -56,8 +56,8 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 			futureYDist[i][index] = 999
 			pastYDist[i][index] = 999
 
-		(futureYVals, futureYDist) = update_future(actDay, 0, window - 1, maxDay, filledDays, yVals, futureYVals, futureYDist)
-		(pastYVals, pastYDist) = update_past(actDay, 0, window - 1, minDay, filledDays, yVals, pastYVals, pastYDist)
+		(futureYVals, futureYDist) = update_future(actDay, 0, window - 1, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row)
+		(pastYVals, pastYDist) = update_past(actDay, 0, window - 1, minDay, filledDays, yVals, pastYVals, pastYDist, index, row)
 
 		sumValPast = 0
 		sumValNext = 0
