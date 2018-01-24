@@ -7,26 +7,26 @@ import seaborn as sns
 
 import math
 
-def update_future(actDay, act_window_idx, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row):
+def update_future(actDay, actDay_orig, act_window_idx, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row):
 	nextDay = actDay + 1
 	while nextDay <= maxDay:
 		if nextDay in filledDays[row['Stock']]:
 			futureYVals[act_window_idx][index] = yVals[(row['Stock'], nextDay)]
-			futureYDist[act_window_idx][index] = nextDay - actDay
+			futureYDist[act_window_idx][index] = nextDay - actDay_orig
 			if (act_window_idx < max_window_idx):
-				return update_future(nextDay + 1, act_window_idx + 1, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row)
+				return update_future(nextDay + 1, actDay_orig, act_window_idx + 1, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row)
 			break
 		nextDay = nextDay + 1
 	return (futureYVals, futureYDist)
 
-def update_past(actDay, act_window_idx, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist, index, row):
+def update_past(actDay, actDay_orig, act_window_idx, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist, index, row):
 	lastDay = actDay - 1
 	while lastDay >= minDay:
 		if lastDay in filledDays[row['Stock']]:
 			pastYVals[act_window_idx][index] = yVals[(row['Stock'], lastDay)]
-			pastYDist[act_window_idx][index] = actDay - lastDay
+			pastYDist[act_window_idx][index] = actDay_orig - lastDay
 			if (act_window_idx < max_window_idx):
-				return update_past(lastDay - 1, act_window_idx + 1, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist, index, row)
+				return update_past(lastDay - 1, actDay_orig, act_window_idx + 1, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist, index, row)
 			break
 		lastDay = lastDay - 1
 	return (pastYVals, pastYDist)
@@ -56,8 +56,8 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 			futureYDist[i][index] = 999
 			pastYDist[i][index] = 999
 
-		(futureYVals, futureYDist) = update_future(actDay, 0, window - 1, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row)
-		(pastYVals, pastYDist) = update_past(actDay, 0, window - 1, minDay, filledDays, yVals, pastYVals, pastYDist, index, row)
+		(futureYVals, futureYDist) = update_future(actDay, actDay, 0, window - 1, maxDay, filledDays, yVals, futureYVals, futureYDist, index, row)
+		(pastYVals, pastYDist) = update_past(actDay, actDay, 0, window - 1, minDay, filledDays, yVals, pastYVals, pastYDist, index, row)
 
 		sumValPast = 0
 		sumValNext = 0
@@ -109,7 +109,7 @@ for index, row in df.iterrows():
 	if int(row['Day']) > maxDay:
 		maxDay = int(row['Day'])
 
-window = 4
+window = 10
 
 orig_features = ['Market', 'Day', 'Stock', 'x0', 'x1', 'x2', 'x3A', 'x3B', 'x3C', 'x3D', 'x3E', 'x4', 'x5', 'x6']
 print("Part 2...")
@@ -122,6 +122,7 @@ for f in aug_features:
 	aug_features_plus_y.append(f)
 
 g = sns.heatmap(df[aug_features_plus_y].corr(),annot=True, fmt = ".2f", cmap = "coolwarm")
+print(df[aug_features_plus_y].corr())
 plt.show()
 print("Part 4...")
 
