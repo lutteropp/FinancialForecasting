@@ -14,9 +14,10 @@ def update_future(actDay, act_window_idx, max_window_idx, maxDay, filledDays, yV
 			futureYVals[act_window_idx][index] = yVals[(row['Stock'], nextDay)]
 			futureYDist[act_window_idx][index] = nextDay - actDay
 			if (act_window_idx < max_window_idx):
-				update_future(nextDay + 1, act_window_idx + 1, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist)
+				return update_future(nextDay + 1, act_window_idx + 1, max_window_idx, maxDay, filledDays, yVals, futureYVals, futureYDist)
 			break
 		nextDay = nextDay + 1
+	return (futureYVals, futureYDist)
 
 def update_past(actDay, act_window_idx, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist):
 	lastDay = actDay - 1
@@ -25,9 +26,10 @@ def update_past(actDay, act_window_idx, max_window_idx, minDay, filledDays, yVal
 			pastYVals[act_window_idx][index] = yVals[(row['Stock'], lastDay)]
 			pastYDist[act_window_idx][index] = actDay - lastDay
 			if (act_window_idx < max_window_idx):
-				update_past(lastDay - 1, act_window_idx + 1, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist)
+				return update_past(lastDay - 1, act_window_idx + 1, max_window_idx, minDay, filledDays, yVals, pastYVals, pastYDist)
 			break
 		lastDay = lastDay - 1
+	return (pastYVals, pastYDist)
 
 def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig_features):
 	num_entries = 0
@@ -54,8 +56,8 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 			futureYDist[i][index] = 999
 			pastYDist[i][index] = 999
 
-		update_future(actDay, 0, window - 1, maxDay, filledDays, yVals, futureYVals, futureYDist)
-		update_past(actDay, 0, window - 1, minDay, filledDays, yVals, pastYVals, pastYDist)
+		(futureYVals, futureYDist) = update_future(actDay, 0, window - 1, maxDay, filledDays, yVals, futureYVals, futureYDist)
+		(pastYVals, pastYDist) = update_past(actDay, 0, window - 1, minDay, filledDays, yVals, pastYVals, pastYDist)
 
 		sumValPast = 0
 		sumValNext = 0
@@ -68,7 +70,7 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 			sumWeightNext = sumWeightNext + (1 / float(futureYDist[i][index]))
 			weightedAvg[i][index] = (sumValPast + sumValNext) / (sumWeightPast + sumWeightNext)
 
-	features = copy(orig_features)
+	features = list(orig_features)
 	for i in range(window):
 		dataframe['pastY' + str(i+1)]=pastYVals[i]
 		dataframe['pastYDist' + str(i+1)]=pastYDist[i]
@@ -81,7 +83,7 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 		features.append('futureY' + str(i+1))
 		features.append('futureYDist' + str(i+1))
 		features.append('weightedAvg' + str(i+1))
-	return features
+	return (dataframe, features)
 
 
 print("Reading data...")
@@ -111,7 +113,7 @@ window = 4
 
 orig_features = ['Market', 'Day', 'Stock', 'x0', 'x1', 'x2', 'x3A', 'x3B', 'x3C', 'x3D', 'x3E', 'x4', 'x5', 'x6']
 print("Part 2...")
-aug_features = augment_dataframe(window, df, minDay, maxDay, filledDays, yVals, orig_features)
+(df, aug_features) = augment_dataframe(window, df, minDay, maxDay, filledDays, yVals, orig_features)
 df.to_csv("train_augmented.csv")
 print("Part 3...")
 
@@ -126,7 +128,7 @@ print("Part 4...")
 for index, row in df_test.iterrows():
 	if row['Stock'] not in filledDays:
 		filledDays[row['Stock']] = set()
-		print("Stock number " + row['Stock'] + " does not appear in the training data.")
+		print("Stock number " + str(row['Stock']) + " does not appear in the training data.")
 
-augment_dataframe(window, df_test, minDay, maxDay, filledDays, yVals, orig_features)
+(df_test, aug_features_test) = augment_dataframe(window, df_test, minDay, maxDay, filledDays, yVals, orig_features)
 df_test.to_csv("test_augmented.csv")
