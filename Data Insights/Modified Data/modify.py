@@ -41,12 +41,14 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 	pastYDist = []
 	futureYDist = []
 	weightedAvg = []
+	unweightedAvg = []
 	for i in range(window):
 		pastYVals.append(np.zeros(num_entries))
 		futureYVals.append(np.zeros(num_entries))
 		pastYDist.append(np.zeros(num_entries))
 		futureYDist.append(np.zeros(num_entries))
 		weightedAvg.append(np.zeros(num_entries))
+		unweightedAvg.append(np.zeros(num_entries))
 
 	for index, row in dataframe.iterrows():
 		print(index)
@@ -63,12 +65,24 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 		sumValNext = 0
 		sumWeightPast = 0
 		sumWeightNext = 0
+		sumValPast_unweighted = 0
+		sumValNext_unweighted = 0
+		sumWeightPast_unweighted = 0
+		sumWeightNext_unweighted = 0
 		for i in range(window):
 			sumValPast = sumValPast + (1/float(pastYDist[i][index])) * pastYVals[i][index]
 			sumValNext = sumValNext + (1/float(futureYDist[i][index])) * futureYVals[i][index]
 			sumWeightPast = sumWeightPast + (1/ float(pastYDist[i][index]))
 			sumWeightNext = sumWeightNext + (1 / float(futureYDist[i][index]))
 			weightedAvg[i][index] = (sumValPast + sumValNext) / (sumWeightPast + sumWeightNext)
+
+			if pastYDist[i][index] != 999:
+				sumValPast_unweighted = sumValPast_unweighted + pastYVals[i][index]
+				sumWeightPast_unweighted = sumWeightPast_unweighted + 1
+			if futureYDist[i][index] != 999:
+				sumValNext_unweighted = sumValNext_unweighted + futureYVals[i][index]
+				sumWeightNext_unweighted = sumWeightPast_unweighted + 1
+			unweightedAvg[i][index] = (sumValPast_unweighted + sumValNext_unweighted) / (sumWeightPast_unweighted + sumWeightNext_unweighted)
 
 	features = list(orig_features)
 	for i in range(window):
@@ -77,12 +91,14 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 		dataframe['futureY' + str(i+1)]=futureYVals[i]
 		dataframe['futureYDist' + str(i+1)]=futureYDist[i]
 		dataframe['weightedAvg' + str(i+1)] = weightedAvg[i]
+		dataframe['unweightedAvg' + str(i+1)] = unweightedAvg[i]
 
 		features.append('pastY' + str(i+1))
 		features.append('pastYDist' + str(i+1))
 		features.append('futureY' + str(i+1))
 		features.append('futureYDist' + str(i+1))
 		features.append('weightedAvg' + str(i+1))
+		features.append('unweightedAvg' + str(i+1))
 	return (dataframe, features)
 
 
