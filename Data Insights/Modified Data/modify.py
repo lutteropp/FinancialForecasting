@@ -74,7 +74,8 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 			sumValNext = sumValNext + (1/float(futureYDist[i][index])) * futureYVals[i][index]
 			sumWeightPast = sumWeightPast + (1/ float(pastYDist[i][index]))
 			sumWeightNext = sumWeightNext + (1 / float(futureYDist[i][index]))
-			weightedAvg[i][index] = (sumValPast + sumValNext) / (sumWeightPast + sumWeightNext)
+			if (sumWeightPast + sumWeightNext) > 0:
+				weightedAvg[i][index] = (sumValPast + sumValNext) / (sumWeightPast + sumWeightNext)
 
 			if pastYDist[i][index] != 999:
 				sumValPast_unweighted = sumValPast_unweighted + pastYVals[i][index]
@@ -82,7 +83,8 @@ def augment_dataframe(window, dataframe, minDay, maxDay, filledDays, yVals, orig
 			if futureYDist[i][index] != 999:
 				sumValNext_unweighted = sumValNext_unweighted + futureYVals[i][index]
 				sumWeightNext_unweighted = sumWeightPast_unweighted + 1
-			unweightedAvg[i][index] = (sumValPast_unweighted + sumValNext_unweighted) / (sumWeightPast_unweighted + sumWeightNext_unweighted)
+			if (sumWeightPast_unweighted + sumWeightNext_unweighted) > 0:
+				unweightedAvg[i][index] = (sumValPast_unweighted + sumValNext_unweighted) / (sumWeightPast_unweighted + sumWeightNext_unweighted)
 
 	features = list(orig_features)
 	for i in range(window):
